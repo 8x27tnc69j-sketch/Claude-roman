@@ -1,110 +1,390 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ACT Bell — Zoom App</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>ACT Tools — инструменты для ACT-терапевтов</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#f0f0ff',
+              100: '#e4e3ff',
+              200: '#cdcbfe',
+              300: '#ada9fc',
+              400: '#8b83f9',
+              500: '#7c6ff5',
+              600: '#6a52e8',
+              700: '#5a3fd0',
+              800: '#4a35aa',
+              900: '#3e2f86',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'fade-up': 'fadeUp 0.6s ease-out forwards',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-12px)' },
+            },
+            fadeUp: {
+              '0%': { opacity: '0', transform: 'translateY(24px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    .gradient-bg {
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,111,245,0.25) 0%, transparent 60%),
+                  radial-gradient(ellipse 60% 40% at 80% 60%, rgba(99,82,232,0.12) 0%, transparent 50%),
+                  #09090f;
+    }
+
+    .card-gradient {
+      background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .pricing-card {
+      background: linear-gradient(135deg, rgba(124,111,245,0.15) 0%, rgba(99,82,232,0.08) 100%);
+      border: 1px solid rgba(124,111,245,0.4);
+    }
+
+    .glow-text {
+      text-shadow: 0 0 60px rgba(124,111,245,0.5);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7c6ff5 0%, #5a3fd0 100%);
+      box-shadow: 0 0 30px rgba(124,111,245,0.35);
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 0 45px rgba(124,111,245,0.55);
+      transform: translateY(-1px);
+    }
+
+    .process-card:hover {
+      border-color: rgba(124,111,245,0.4);
+      transform: translateY(-4px);
+    }
+    .process-card { transition: all 0.25s; }
+
+    .hero-bell {
+      filter: drop-shadow(0 0 30px rgba(124,111,245,0.6));
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .shimmer-text {
+      background: linear-gradient(90deg, #ada9fc, #ffffff, #7c6ff5, #ffffff, #ada9fc);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 4s linear infinite;
+    }
+
+    .noise::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    .section-fade { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .section-fade.visible { opacity: 1; transform: translateY(0); }
+  </style>
 </head>
-<body>
-  <div class="app">
-    <header class="app-header">
-      <h1>ACT Bell</h1>
-      <p class="subtitle">Mindfulness сигнал</p>
-    </header>
+<body class="gradient-bg text-white min-h-screen noise">
 
-    <main>
-      <!-- Кнопка одиночного звука -->
-      <section class="bell-section">
-        <button class="bell-button" id="bellBtn" title="Сыграть звук">
-          <span class="bell-icon">&#x1F514;</span>
-        </button>
-        <p class="bell-hint">Нажмите для сигнала</p>
-      </section>
+  <!-- NAV -->
+  <nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/20 border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🔔</span>
+        <span class="font-bold text-lg tracking-tight">ACT Tools</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm text-white/60">
+        <a href="#processes" class="hover:text-white transition-colors">Процессы</a>
+        <a href="#how" class="hover:text-white transition-colors">Как работает</a>
+        <a href="#pricing" class="hover:text-white transition-colors">Цена</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/login" class="text-sm text-white/70 hover:text-white transition-colors px-4 py-2">Войти</a>
+        <a href="/register" class="btn-primary text-sm font-semibold px-5 py-2 rounded-xl text-white">Начать бесплатно</a>
+      </div>
+    </div>
+  </nav>
 
-      <!-- Настройки звука -->
-      <section class="controls">
-        <div class="control-group">
-          <label for="pitchSlider">
-            Высота тона
-            <span class="value-badge" id="pitchValue">432 Гц</span>
-          </label>
-          <input
-            type="range"
-            id="pitchSlider"
-            min="200"
-            max="900"
-            value="432"
-            step="1"
-          />
-          <div class="range-labels">
-            <span>Низкий</span>
-            <span>Высокий</span>
+  <!-- HERO -->
+  <section class="relative min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16 text-center overflow-hidden">
+    <!-- Background glow orbs -->
+    <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-brand-600/10 blur-[120px] pointer-events-none"></div>
+
+    <div class="relative z-10 max-w-4xl mx-auto">
+      <div class="inline-flex items-center gap-2 bg-brand-500/10 border border-brand-500/20 rounded-full px-4 py-1.5 text-sm text-brand-300 mb-8">
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse-slow inline-block"></span>
+        Специально для ACT-терапевтов
+      </div>
+
+      <h1 class="text-5xl md:text-7xl font-black leading-[1.05] tracking-tight mb-6">
+        Инструменты ACT —
+        <span class="shimmer-text block mt-1">прямо в Zoom</span>
+      </h1>
+
+      <p class="text-lg md:text-xl text-white/55 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Мини-приложения для каждого из 6 процессов терапии принятия и ответственности.
+        Запускайте упражнения одним кликом прямо во время сессии с клиентом.
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <a href="/register" class="btn-primary font-bold px-8 py-4 rounded-2xl text-base w-full sm:w-auto">
+          Попробовать 15 дней бесплатно →
+        </a>
+        <a href="#how" class="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm px-4 py-4">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16"/></svg>
+          Смотреть демо
+        </a>
+      </div>
+
+      <p class="text-white/30 text-sm mt-6">Не нужна кредитная карта · 15 дней бесплатно · Отмена в любой момент</p>
+    </div>
+
+    <!-- Floating bell mockup -->
+    <div class="relative z-10 mt-16 hero-bell">
+      <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 inline-flex flex-col items-center gap-4 shadow-2xl">
+        <div class="text-7xl">🔔</div>
+        <div class="flex gap-3">
+          <div class="bg-brand-500/20 border border-brand-500/30 rounded-xl px-4 py-2 text-xs text-brand-300">432 Гц</div>
+          <div class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white/50">2.0 с</div>
+          <div class="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-2 text-xs text-green-400">● Активен</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 PROCESSES -->
+  <section id="processes" class="py-24 px-6 section-fade">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl md:text-5xl font-black mb-4">6 процессов ACT</h2>
+        <p class="text-white/50 text-lg max-w-xl mx-auto">Каждый раздел — набор инструментов для работы с конкретным процессом на сессии</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <div class="process-card card-gradient rounded-2xl p-6 cursor-default">
+          <div class="text-3xl mb-4">⏱️</div>
+          <h3 class="font-bold text-lg mb-2">Контакт с настоящим</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-4">Инструменты для возвращения клиента в текущий момент</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">🔔 Bell-сигнал</span>
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">🌬️ Дыхание</span>
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">⚓ Якорь</span>
           </div>
         </div>
 
-        <div class="control-group">
-          <label for="decaySlider">
-            Длительность
-            <span class="value-badge" id="decayValue">2.0 с</span>
-          </label>
-          <input
-            type="range"
-            id="decaySlider"
-            min="0.5"
-            max="6"
-            value="2"
-            step="0.1"
-          />
-          <div class="range-labels">
-            <span>Короткий</span>
-            <span>Длинный</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Интервальный режим -->
-      <section class="interval-section">
-        <h2>Интервальный режим</h2>
-
-        <div class="control-group">
-          <label for="intervalSlider">
-            Интервал между сигналами
-            <span class="value-badge" id="intervalValue">10 с</span>
-          </label>
-          <input
-            type="range"
-            id="intervalSlider"
-            min="1"
-            max="60"
-            value="10"
-            step="1"
-          />
-          <div class="range-labels">
-            <span>1 с</span>
-            <span>1 мин</span>
+        <div class="process-card card-gradient rounded-2xl p-6 cursor-default">
+          <div class="text-3xl mb-4">🌊</div>
+          <h3 class="font-bold text-lg mb-2">Принятие</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-4">Визуализации и шкалы для работы с дискомфортом</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">🍃 Листья на реке</span>
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">📊 Шкала</span>
           </div>
         </div>
 
-        <div class="interval-controls">
-          <button class="btn-start" id="startBtn">Запустить</button>
-          <button class="btn-stop" id="stopBtn" disabled>Стоп</button>
+        <div class="process-card card-gradient rounded-2xl p-6 cursor-default">
+          <div class="text-3xl mb-4">💭</div>
+          <h3 class="font-bold text-lg mb-2">Дефузия</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-4">Техники разделения с мыслями и убеждениями</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">🔄 Переформулировка</span>
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">👁️ Наблюдение</span>
+          </div>
         </div>
 
-        <div class="timer-display" id="timerDisplay" hidden>
-          <span class="timer-label">Следующий сигнал через</span>
-          <span class="timer-value" id="timerValue">—</span>
+        <div class="process-card card-gradient rounded-2xl p-6 cursor-default">
+          <div class="text-3xl mb-4">👁️</div>
+          <h3 class="font-bold text-lg mb-2">Я как контекст</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-4">Упражнения с перспективой наблюдателя</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">🔭 Наблюдатель</span>
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">📍 Точка зрения</span>
+          </div>
         </div>
-      </section>
-    </main>
 
-    <footer class="app-footer">
-      <span id="statusMsg"></span>
-    </footer>
-  </div>
+        <div class="process-card card-gradient rounded-2xl p-6 cursor-default">
+          <div class="text-3xl mb-4">🧭</div>
+          <h3 class="font-bold text-lg mb-2">Ценности</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-4">Карточки и упражнения для прояснения ценностей</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">🃏 Карточки</span>
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">⭕ Колесо жизни</span>
+          </div>
+        </div>
 
-  <script src="https://appssdk.zoom.us/sdk.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/app.js"></script>
+        <div class="process-card card-gradient rounded-2xl p-6 cursor-default">
+          <div class="text-3xl mb-4">🎯</div>
+          <h3 class="font-bold text-lg mb-2">Действие</h3>
+          <p class="text-white/45 text-sm leading-relaxed mb-4">Планирование committed action и трекинг</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">📋 Планировщик</span>
+            <span class="bg-white/5 rounded-lg px-3 py-1 text-xs text-white/50">✅ Трекер</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="py-24 px-6 section-fade">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-4xl md:text-5xl font-black mb-4">Как это работает</h2>
+      <p class="text-white/50 text-lg mb-16">Три шага — и инструменты уже в сессии</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+        <!-- connector line -->
+        <div class="hidden md:block absolute top-10 left-1/3 right-1/3 h-px bg-gradient-to-r from-transparent via-brand-500/40 to-transparent"></div>
+
+        <div class="flex flex-col items-center gap-4">
+          <div class="w-20 h-20 rounded-2xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center text-3xl">📹</div>
+          <div class="font-bold text-lg">Запустите Zoom</div>
+          <p class="text-white/45 text-sm">Начните видеосессию с клиентом как обычно</p>
+        </div>
+
+        <div class="flex flex-col items-center gap-4">
+          <div class="w-20 h-20 rounded-2xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center text-3xl">🔔</div>
+          <div class="font-bold text-lg">Откройте ACT Tools</div>
+          <p class="text-white/45 text-sm">Нажмите кнопку Apps в Zoom — приложение откроется в сайдбаре</p>
+        </div>
+
+        <div class="flex flex-col items-center gap-4">
+          <div class="w-20 h-20 rounded-2xl bg-brand-500/15 border border-brand-500/25 flex items-center justify-center text-3xl">⚡</div>
+          <div class="font-bold text-lg">Работайте с клиентом</div>
+          <p class="text-white/45 text-sm">Запускайте упражнения одним кликом прямо во время разговора</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="py-24 px-6 section-fade">
+    <div class="max-w-lg mx-auto text-center">
+      <h2 class="text-4xl md:text-5xl font-black mb-4">Один тариф. Всё включено.</h2>
+      <p class="text-white/50 text-lg mb-12">Без скрытых платежей и ограничений по функциям</p>
+
+      <div class="pricing-card rounded-3xl p-8 relative overflow-hidden">
+        <!-- Top glow -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-brand-400 to-transparent rounded-full"></div>
+
+        <div class="inline-flex items-center gap-2 bg-brand-500/20 border border-brand-500/30 rounded-full px-4 py-1.5 text-sm text-brand-300 mb-6">
+          🎁 15 дней бесплатно
+        </div>
+
+        <div class="mb-6">
+          <span class="text-6xl font-black">$19</span>
+          <span class="text-white/40 ml-2">/месяц</span>
+        </div>
+
+        <ul class="text-left space-y-3 mb-8">
+          <li class="flex items-center gap-3 text-white/75">
+            <span class="text-brand-400 text-lg">✓</span>
+            Все 6 разделов ACT
+          </li>
+          <li class="flex items-center gap-3 text-white/75">
+            <span class="text-brand-400 text-lg">✓</span>
+            Все мини-инструменты (и новые при добавлении)
+          </li>
+          <li class="flex items-center gap-3 text-white/75">
+            <span class="text-brand-400 text-lg">✓</span>
+            Работает внутри Zoom
+          </li>
+          <li class="flex items-center gap-3 text-white/75">
+            <span class="text-brand-400 text-lg">✓</span>
+            Новые инструменты каждый месяц
+          </li>
+          <li class="flex items-center gap-3 text-white/75">
+            <span class="text-brand-400 text-lg">✓</span>
+            Отмена в любой момент
+          </li>
+        </ul>
+
+        <a href="/register" class="btn-primary font-bold text-base py-4 rounded-2xl text-white block text-center">
+          Начать 15 дней бесплатно →
+        </a>
+
+        <p class="text-white/30 text-xs mt-4">Кредитная карта не нужна для пробного периода</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="py-24 px-6 section-fade">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="text-6xl mb-6 glow-text">🔔</div>
+      <h2 class="text-4xl md:text-5xl font-black mb-4">
+        Начните использовать<br/>
+        <span class="shimmer-text">ACT Tools сегодня</span>
+      </h2>
+      <p class="text-white/50 text-lg mb-8">15 дней бесплатно. Без обязательств.</p>
+      <a href="/register" class="btn-primary font-bold text-base px-10 py-4 rounded-2xl text-white inline-block">
+        Попробовать бесплатно →
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-white/5 py-8 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2 text-white/40">
+        <span>🔔</span>
+        <span class="font-semibold text-white/60">ACT Tools</span>
+        <span>· © 2026</span>
+      </div>
+      <div class="flex gap-6 text-sm text-white/30">
+        <a href="#" class="hover:text-white/60 transition-colors">Конфиденциальность</a>
+        <a href="#" class="hover:text-white/60 transition-colors">Условия</a>
+        <a href="#" class="hover:text-white/60 transition-colors">Поддержка</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Intersection observer for scroll animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.section-fade').forEach(el => observer.observe(el));
+  </script>
+
 </body>
 </html>
