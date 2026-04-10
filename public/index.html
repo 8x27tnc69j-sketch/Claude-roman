@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACT Bell — Zoom App</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>ACT Bell</h1>
+      <p class="subtitle">Mindfulness сигнал</p>
+    </header>
+
+    <main>
+      <!-- Кнопка одиночного звука -->
+      <section class="bell-section">
+        <button class="bell-button" id="bellBtn" title="Сыграть звук">
+          <span class="bell-icon">&#x1F514;</span>
+        </button>
+        <p class="bell-hint">Нажмите для сигнала</p>
+      </section>
+
+      <!-- Настройки звука -->
+      <section class="controls">
+        <div class="control-group">
+          <label for="pitchSlider">
+            Высота тона
+            <span class="value-badge" id="pitchValue">432 Гц</span>
+          </label>
+          <input
+            type="range"
+            id="pitchSlider"
+            min="200"
+            max="900"
+            value="432"
+            step="1"
+          />
+          <div class="range-labels">
+            <span>Низкий</span>
+            <span>Высокий</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="decaySlider">
+            Длительность
+            <span class="value-badge" id="decayValue">2.0 с</span>
+          </label>
+          <input
+            type="range"
+            id="decaySlider"
+            min="0.5"
+            max="6"
+            value="2"
+            step="0.1"
+          />
+          <div class="range-labels">
+            <span>Короткий</span>
+            <span>Длинный</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Интервальный режим -->
+      <section class="interval-section">
+        <h2>Интервальный режим</h2>
+
+        <div class="control-group">
+          <label for="intervalSlider">
+            Интервал между сигналами
+            <span class="value-badge" id="intervalValue">60 с</span>
+          </label>
+          <input
+            type="range"
+            id="intervalSlider"
+            min="10"
+            max="600"
+            value="60"
+            step="5"
+          />
+          <div class="range-labels">
+            <span>10 с</span>
+            <span>10 мин</span>
+          </div>
+        </div>
+
+        <div class="interval-controls">
+          <button class="btn-start" id="startBtn">Запустить</button>
+          <button class="btn-stop" id="stopBtn" disabled>Стоп</button>
+        </div>
+
+        <div class="timer-display" id="timerDisplay" hidden>
+          <span class="timer-label">Следующий сигнал через</span>
+          <span class="timer-value" id="timerValue">—</span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span id="statusMsg"></span>
+    </footer>
+  </div>
+
+  <script src="https://appssdk.zoom.us/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
