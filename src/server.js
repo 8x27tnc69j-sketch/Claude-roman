@@ -56,6 +56,10 @@ io.on('connection', (socket) => {
     socket.to(roomCode).emit('client-holding-update', holding);
   });
 
+  socket.on('ball-position', ({ roomCode, nx, ny }) => {
+    socket.to(roomCode).emit('ball-position-update', { nx, ny });
+  });
+
   socket.on('disconnect', () => {
     for (const [code, session] of sessions.entries()) {
       if (session.therapistId === socket.id || session.clientId === socket.id) {
