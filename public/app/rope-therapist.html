@@ -59,21 +59,27 @@ socket.on('peer-disconnected',     ()       => { clientConnected = false; docume
 // Send pull direction 20× per second
 setInterval(() => {
   if (!pulling || !clientConnected) return;
-  const cx = W / 2, cy = H / 2;
-  const dx = mouseX - cx;
-  const dy = mouseY - cy;
-  const len = Math.max(Math.hypot(dx, dy), 1);
-  socket.emit('therapist-pull', { roomCode, dx: (dx / len) * 0.25, dy: (dy / len) * 0.25 });
+  socket.emit('therapist-pull', { roomCode, dx: 0, dy: 0 }); // direction computed on client
 }, 50);
 
 // Mouse
-canvas.addEventListener('mousedown',  e => { pulling = true;  mouseX = e.clientX; mouseY = e.clientY; });
+canvas.addEventListener('mousedown', e => {
+  mouseX = e.clientX; mouseY = e.clientY;
+  // First press: snap ball to home + start exercise
+  socket.emit('exercise-start', roomCode);
+  pulling = true;
+  socket.emit('therapist-pull', { roomCode, dx: 0, dy: 0 });
+});
 canvas.addEventListener('mousemove',  e => { mouseX = e.clientX; mouseY = e.clientY; });
 canvas.addEventListener('mouseup',    () => { pulling = false; socket.emit('therapist-release', roomCode); });
 canvas.addEventListener('mouseleave', () => { if (pulling) { pulling = false; socket.emit('therapist-release', roomCode); } });
 
 // Touch
-canvas.addEventListener('touchstart', e => { pulling = true; const t = e.touches[0]; mouseX = t.clientX; mouseY = t.clientY; }, { passive: true });
+canvas.addEventListener('touchstart', e => {
+  const t = e.touches[0]; mouseX = t.clientX; mouseY = t.clientY;
+  socket.emit('exercise-start', roomCode);
+  pulling = true;
+}, { passive: true });
 canvas.addEventListener('touchmove',  e => { e.preventDefault(); const t = e.touches[0]; mouseX = t.clientX; mouseY = t.clientY; }, { passive: false });
 canvas.addEventListener('touchend',   () => { pulling = false; socket.emit('therapist-release', roomCode); });
 

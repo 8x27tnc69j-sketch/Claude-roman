@@ -44,6 +44,14 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('exercise-start', (roomCode) => {
+    socket.to(roomCode).emit('exercise-start');
+  });
+
+  socket.on('exercise-stop', (roomCode) => {
+    socket.to(roomCode).emit('exercise-stop');
+  });
+
   socket.on('therapist-pull', ({ roomCode, dx, dy }) => {
     socket.to(roomCode).emit('monster-pull', { dx, dy });
   });
