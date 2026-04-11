@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #06060a;
+      overflow: hidden;
+      cursor: crosshair;
+      font-family: 'Courier New', monospace;
+      user-select: none;
+    }
+    canvas { display: block; position: fixed; inset: 0; }
+
+    /* Room code — the only text on screen */
+    #code-wrap {
+      position: fixed;
+      top: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+    #code-label {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      color: rgba(255,255,255,0.18);
+    }
+    #code-value {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 0.25em;
+      color: rgba(255,255,255,0.55);
+      display: block;
+      margin-top: 4px;
+    }
+
+    /* Client connection dot */
+    #dot {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      transition: background 0.6s;
+      z-index: 10;
+    }
+    #dot.connected { background: rgba(80,220,120,0.6); }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="code-wrap">
+  <div id="code-label">КОД СЕССИИ</div>
+  <span id="code-value">----</span>
+</div>
+<div id="dot"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+// Room code
+const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+document.getElementById('code-value').textContent = roomCode;
+
+// Socket
+const socket = io();
+socket.emit('therapist-create', roomCode);
+
+let clientConnected  = false;
+let clientHolding    = false;
+let pulling          = false;
+let mouseX = canvas.width/2, mouseY = canvas.height/2;
+
+socket.on('client-connected',      ()  => { clientConnected = true;  document.getElementById('dot').classList.add('connected'); });
+socket.on('client-holding-update', (h) => { clientHolding = h; });
+socket.on('peer-disconnected',     ()  => { clientConnected = false; document.getElementById('dot').classList.remove('connected'); });
+
+// Pull loop — sends direction to client 20× per second
+setInterval(() => {
+  if (!pulling || !clientConnected) return;
+  const cx = canvas.width  / 2;
+  const cy = canvas.height / 2;
+  const dx = mouseX - cx;
+  const dy = mouseY - cy;
+  const len = Math.max(Math.hypot(dx, dy), 1);
+  // Normalised direction, scaled to ~0.25 max
+  socket.emit('therapist-pull', { roomCode, dx: (dx / len) * 0.25, dy: (dy / len) * 0.25 });
+}, 50);
+
+// Mouse
+canvas.addEventListener('mousedown',  e => { pulling = true;  mouseX = e.clientX; mouseY = e.clientY; });
+canvas.addEventListener('mousemove',  e => { mouseX = e.clientX; mouseY = e.clientY; });
+canvas.addEventListener('mouseup',    () => { pulling = false; socket.emit('therapist-release', roomCode); });
+canvas.addEventListener('mouseleave', () => { if (pulling) { pulling = false; socket.emit('therapist-release', roomCode); } });
+
+// Touch
+canvas.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  pulling = true; mouseX = t.clientX; mouseY = t.clientY;
+}, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = e.touches[0]; mouseX = t.clientX; mouseY = t.clientY;
+}, { passive: false });
+canvas.addEventListener('touchend', () => {
+  pulling = false; socket.emit('therapist-release', roomCode);
+});
+
+// Draw
+let pulseT = 0;
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  pulseT += 0.025;
+
+  const cx = canvas.width  / 2;
+  const cy = canvas.height / 2;
+
+  // Background glow when pulling — dark red spreads from mouse
+  if (pulling) {
+    const grd = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, 280);
+    grd.addColorStop(0, 'rgba(180,30,30,0.18)');
+    grd.addColorStop(1, 'rgba(180,30,30,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Center ring — where client's circle wants to be
+  const baseAlpha = pulling ? 0.18 : 0.07;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 46, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(255,255,255,${baseAlpha})`;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Breathing pulse (when not pulling)
+  if (!pulling) {
+    const p = 0.5 + 0.5 * Math.sin(pulseT);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 46 + 8 + p * 8, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,255,255,${0.03 + p * 0.03})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Pull cursor
+  if (pulling) {
+    // Dashed line from center to mouse (direction of pull)
+    ctx.save();
+    ctx.setLineDash([4, 10]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(mouseX, mouseY);
+    ctx.strokeStyle = 'rgba(200,60,60,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // Cursor circle
+    ctx.beginPath();
+    ctx.arc(mouseX, mouseY, 22, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(210,70,70,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Inner dot
+    ctx.beginPath();
+    ctx.arc(mouseX, mouseY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(210,70,70,0.9)';
+    ctx.fill();
+  }
+
+  // Client holding indicator — tiny dot near center ring
+  if (clientHolding) {
+    ctx.beginPath();
+    ctx.arc(cx + 54, cy, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(80,200,120,0.55)';
+    ctx.fill();
+  }
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

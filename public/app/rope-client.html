@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #06060a; overflow: hidden; cursor: none; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', () => { resize(); home.x = canvas.width/2; home.y = canvas.height/2; });
+
+const home = { x: canvas.width/2, y: canvas.height/2 };
+
+const ball = { x: home.x, y: home.y, vx: 0, vy: 0, r: 58 };
+
+// Tuning
+const DRAG_RATIO   = 0.14;   // how little the client's mouse moves the ball
+const BASE_NOISE   = 0.10;   // baseline random drift each frame
+const BURST_PROB   = 0.003;  // probability of a burst per frame
+const BURST_FORCE  = 2.8;    // magnitude of a burst
+const DAMPING      = 0.91;
+const PULL_FORCE   = 0.55;   // therapist pull magnitude
+const MARGIN       = 90;     // soft screen boundary
+const WALL_SPRING  = 0.28;
+
+let started  = false;
+let dragging = false;
+let lastMX   = 0;
+let lastMY   = 0;
+let monsterDX = 0;
+let monsterDY = 0;
+let monsterActive = false;
+
+// Socket
+const roomCode = new URLSearchParams(location.search).get('room') || '';
+const socket   = io();
+if (roomCode) socket.emit('client-join', roomCode);
+
+socket.on('monster-pull',    ({ dx, dy }) => { monsterDX = dx; monsterDY = dy; monsterActive = true; });
+socket.on('monster-release', ()           => { monsterActive = false; });
+
+// Input
+function hitTest(mx, my) {
+  const dx = mx - ball.x, dy = my - ball.y;
+  return Math.sqrt(dx*dx + dy*dy) < ball.r + 22;
+}
+
+canvas.addEventListener('mousedown', e => {
+  if (hitTest(e.clientX, e.clientY)) {
+    dragging = true;
+    started  = true;
+    lastMX = e.clientX; lastMY = e.clientY;
+    socket.emit('client-holding', { roomCode, holding: true });
+  }
+});
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  ball.x += (e.clientX - lastMX) * DRAG_RATIO;
+  ball.y += (e.clientY - lastMY) * DRAG_RATIO;
+  lastMX = e.clientX; lastMY = e.clientY;
+});
+canvas.addEventListener('mouseup', () => {
+  if (dragging) socket.emit('client-holding', { roomCode, holding: false });
+  dragging = false;
+});
+
+// Touch
+canvas.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  if (hitTest(t.clientX, t.clientY)) {
+    dragging = true; started = true;
+    lastMX = t.clientX; lastMY = t.clientY;
+    socket.emit('client-holding', { roomCode, holding: true });
+  }
+}, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!dragging) return;
+  const t = e.touches[0];
+  ball.x += (t.clientX - lastMX) * DRAG_RATIO;
+  ball.y += (t.clientY - lastMY) * DRAG_RATIO;
+  lastMX = t.clientX; lastMY = t.clientY;
+}, { passive: false });
+canvas.addEventListener('touchend', () => {
+  if (dragging) socket.emit('client-holding', { roomCode, holding: false });
+  dragging = false;
+});
+
+// Physics
+function update() {
+  if (!started) return;
+
+  // Drift — random walk
+  ball.vx += (Math.random() - 0.5) * BASE_NOISE;
+  ball.vy += (Math.random() - 0.5) * BASE_NOISE;
+
+  // Occasional burst
+  if (Math.random() < BURST_PROB) {
+    const angle = Math.random() * Math.PI * 2;
+    ball.vx += Math.cos(angle) * BURST_FORCE;
+    ball.vy += Math.sin(angle) * BURST_FORCE;
+  }
+
+  // Monster pull (therapist)
+  if (monsterActive) {
+    ball.vx += monsterDX * PULL_FORCE;
+    ball.vy += monsterDY * PULL_FORCE;
+  }
+
+  // Soft boundary
+  if (ball.x < MARGIN)                  ball.vx += WALL_SPRING;
+  if (ball.x > canvas.width  - MARGIN)  ball.vx -= WALL_SPRING;
+  if (ball.y < MARGIN)                   ball.vy += WALL_SPRING;
+  if (ball.y > canvas.height - MARGIN)  ball.vy -= WALL_SPRING;
+
+  ball.vx *= DAMPING;
+  ball.vy *= DAMPING;
+
+  if (!dragging) {
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+  }
+}
+
+// Draw helpers
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const dist    = Math.hypot(ball.x - home.x, ball.y - home.y);
+  const maxDist = Math.min(canvas.width, canvas.height) * 0.38;
+  const t       = Math.min(dist / maxDist, 1); // 0 = calm, 1 = max tension
+
+  // Color: calm violet → tense red-orange
+  const r = Math.round(lerp(110, 255, t));
+  const g = Math.round(lerp( 90, 60,  t));
+  const b = Math.round(lerp(240, 40,  t));
+  const color = `${r},${g},${b}`;
+
+  // Home ring — always at center, very subtle
+  ctx.beginPath();
+  ctx.arc(home.x, home.y, ball.r, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(255,255,255,${0.07 + t * 0.10})`;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Outer glow of ball
+  const grd = ctx.createRadialGradient(ball.x, ball.y, ball.r * 0.4, ball.x, ball.y, ball.r * 2.4);
+  grd.addColorStop(0, `rgba(${color},${0.18 + t * 0.18})`);
+  grd.addColorStop(1, `rgba(${color},0)`);
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r * 2.4, 0, Math.PI * 2);
+  ctx.fillStyle = grd;
+  ctx.fill();
+
+  // Main ball
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(${color},${0.72 + t * 0.28})`;
+  ctx.fill();
+
+  // Drag ring — shows client is holding
+  if (dragging) {
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r + 7, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,255,255,0.35)`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Before start: faint breathing pulse
+  if (!started) {
+    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 1000);
+    ctx.beginPath();
+    ctx.arc(home.x, home.y, ball.r + 10 + pulse * 6, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(110,90,240,${0.08 + pulse * 0.08})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
