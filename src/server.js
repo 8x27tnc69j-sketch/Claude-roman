@@ -52,6 +52,10 @@ io.on('connection', (socket) => {
     socket.to(roomCode).emit('exercise-stop');
   });
 
+  socket.on('therapist-velocity', ({ roomCode, vx, vy }) => {
+    socket.to(roomCode).emit('therapist-velocity', { vx, vy });
+  });
+
   socket.on('therapist-pull', ({ roomCode, dx, dy }) => {
     socket.to(roomCode).emit('monster-pull', { dx, dy });
   });

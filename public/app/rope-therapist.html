@@ -56,10 +56,19 @@ socket.on('client-holding-update', (h)      => { clientHolding = h; });
 socket.on('ball-position-update',  ({ nx, ny }) => { ghostNX = nx; ghostNY = ny; });
 socket.on('peer-disconnected',     ()       => { clientConnected = false; document.getElementById('dot').classList.remove('connected'); });
 
-// Send pull direction 20× per second
+// Track mouse delta and send as velocity to client
+const THERAPIST_SCALE = 0.07; // how much drag speed becomes force
+let lastSentX = mouseX, lastSentY = mouseY;
+
 setInterval(() => {
   if (!pulling || !clientConnected) return;
-  socket.emit('therapist-pull', { roomCode, dx: 0, dy: 0 }); // direction computed on client
+  const dx = mouseX - lastSentX;
+  const dy = mouseY - lastSentY;
+  lastSentX = mouseX; lastSentY = mouseY;
+  // Only send if there's actual movement
+  if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+    socket.emit('therapist-velocity', { roomCode, vx: dx * THERAPIST_SCALE, vy: dy * THERAPIST_SCALE });
+  }
 }, 50);
 
 // Mouse
