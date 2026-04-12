@@ -17,6 +17,7 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../public/index.ht
 app.get('/app/bell', (req, res) => res.sendFile(path.join(__dirname, '../public/app/bell.html')));
 app.get('/app/rope', (req, res) => res.sendFile(path.join(__dirname, '../public/app/rope-client.html')));
 app.get('/app/rope-therapist', (req, res) => res.sendFile(path.join(__dirname, '../public/app/rope-therapist.html')));
+app.get('/app/values', (req, res) => res.sendFile(path.join(__dirname, '../public/app/values.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 app.get('/auth', (req, res) => {

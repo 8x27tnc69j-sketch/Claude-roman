@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Ценности</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: #06060a;
+      font-family: 'Courier New', monospace;
+      color: #fff;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .screen {
+      display: none;
+      position: fixed; inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .screen.active { display: flex; }
+
+    /* ── Intro / Summary screens ── */
+    .s-title {
+      font-size: clamp(18px, 5vw, 30px);
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.88);
+      margin-bottom: 20px;
+    }
+    .s-sub {
+      font-size: clamp(12px, 2.5vw, 14px);
+      color: rgba(255,255,255,0.38);
+      line-height: 1.85;
+      letter-spacing: 0.05em;
+      max-width: 420px;
+      white-space: pre-line;
+      margin-bottom: 44px;
+    }
+    .s-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.65);
+      font-family: inherit;
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      padding: 13px 36px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .s-btn:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
+
+    /* ── Sort screen ── */
+    #sort-screen { justify-content: space-between; padding: 0; }
+
+    #top-bar {
+      width: 100%;
+      padding: 18px 24px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    #progress-track {
+      width: 100%; height: 1px;
+      background: rgba(255,255,255,0.07);
+    }
+    #progress-fill { height: 100%; background: rgba(255,255,255,0.22); transition: width 0.3s; }
+    #top-labels {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+    #round-label { font-size: 9px; letter-spacing: 0.3em; color: rgba(255,255,255,0.18); }
+    #card-counter { font-size: 9px; letter-spacing: 0.15em; color: rgba(255,255,255,0.18); }
+
+    /* ── Card ── */
+    #card-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 12px 24px;
+      perspective: 1400px;
+    }
+    #card-wrap {
+      width: min(320px, 82vw);
+      height: min(440px, 56vh);
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.42s cubic-bezier(.4,0,.2,1);
+      cursor: pointer;
+    }
+    #card-wrap.flipped { transform: rotateY(180deg); }
+
+    .face {
+      position: absolute; inset: 0;
+      border-radius: 18px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 24px;
+    }
+    .face.front {
+      background: #f5f3ef;
+    }
+    .face.back {
+      background: #f5f3ef;
+      transform: rotateY(180deg);
+    }
+
+    #card-title {
+      font-size: clamp(22px, 7vw, 38px);
+      font-weight: 900;
+      color: #09090f;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.1;
+    }
+    #card-tap-hint {
+      position: absolute;
+      bottom: 18px;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      color: rgba(9,9,15,0.22);
+    }
+    #card-title-back {
+      font-size: clamp(13px, 3.5vw, 17px);
+      font-weight: 700;
+      color: rgba(9,9,15,0.4);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    #card-desc {
+      font-size: clamp(13px, 3vw, 15px);
+      color: #1a1a2e;
+      text-align: center;
+      line-height: 1.7;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Buttons ── */
+    #btn-row {
+      width: 100%;
+      display: flex;
+      gap: 8px;
+      padding: 0 16px 20px;
+      flex-shrink: 0;
+    }
+    .sort-btn {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.45);
+      font-family: inherit;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      padding: 14px 4px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.18s;
+      line-height: 1.55;
+    }
+    .sort-btn:hover, .sort-btn:active {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.22);
+      color: #fff;
+    }
+    #btn-high {
+      border-color: rgba(255,255,255,0.16);
+      color: rgba(255,255,255,0.75);
+      background: rgba(255,255,255,0.07);
+    }
+
+    /* ── Pile summary ── */
+    .pile-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 20px;
+      margin: 5px 0;
+      background: rgba(255,255,255,0.04);
+      border-radius: 6px;
+      width: min(340px, 85vw);
+    }
+    .pile-name { font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.35); }
+    .pile-n    { font-size: 24px; font-weight: bold; color: rgba(255,255,255,0.75); }
+
+    /* ── Results ── */
+    #chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      justify-content: center;
+      max-width: 560px;
+      max-height: 48vh;
+      overflow-y: auto;
+      margin: 4px 0 36px;
+    }
+    .chip {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 4px;
+      padding: 8px 18px;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.82);
+      animation: chipIn 0.4s both;
+    }
+    @keyframes chipIn {
+      from { opacity:0; transform: scale(0.85); }
+      to   { opacity:1; transform: scale(1); }
+    }
+
+    /* ── Card animations ── */
+    @keyframes exitL { to { transform: translateX(-130%) rotate(-10deg); opacity:0; } }
+    @keyframes exitR { to { transform: translateX(130%)  rotate(10deg);  opacity:0; } }
+    @keyframes exitU { to { transform: translateY(-120%) scale(0.88);    opacity:0; } }
+    @keyframes enter { from { opacity:0; transform: scale(0.9) translateY(14px); } to { opacity:1; transform:none; } }
+
+    #card-area.exit-l #card-wrap { animation: exitL 0.32s forwards; }
+    #card-area.exit-r #card-wrap { animation: exitR 0.32s forwards; }
+    #card-area.exit-u #card-wrap { animation: exitU 0.32s forwards; }
+    #card-area.entering #card-wrap { animation: enter 0.28s forwards; }
+  </style>
+</head>
+<body>
+
+<!-- ── Welcome ─────────────────────────────────────────────── -->
+<div id="s-welcome" class="screen active">
+  <div class="s-title">ЦЕННОСТИ</div>
+  <div class="s-sub">Вы пройдёте через три раунда сортировки карточек,
+постепенно сужая круг до самых главных ценностей.
+
+Не думайте долго — доверяйтесь первому ощущению.</div>
+  <button class="s-btn" onclick="begin()">НАЧАТЬ →</button>
+</div>
+
+<!-- ── Round intro ─────────────────────────────────────────── -->
+<div id="s-round" class="screen">
+  <div class="s-title" id="round-title"></div>
+  <div class="s-sub" id="round-text"></div>
+  <button class="s-btn" onclick="startSort()">НАЧАТЬ РАУНД →</button>
+</div>
+
+<!-- ── Sorting ─────────────────────────────────────────────── -->
+<div id="sort-screen" class="screen">
+  <div id="top-bar">
+    <div id="top-labels">
+      <span id="round-label">РАУНД 1 ИЗ 3</span>
+      <span id="card-counter">1 / 56</span>
+    </div>
+    <div id="progress-track"><div id="progress-fill" style="width:0%"></div></div>
+  </div>
+
+  <div id="card-area">
+    <div id="card-wrap">
+      <div class="face front">
+        <div id="card-title">ЦЕННОСТЬ</div>
+        <div id="card-tap-hint">НАЖМИТЕ — ПОДРОБНЕЕ</div>
+      </div>
+      <div class="face back">
+        <div id="card-title-back"></div>
+        <div id="card-desc"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="btn-row">
+    <button class="sort-btn" onclick="sort('low')">← НЕ ОЧЕНЬ<br>ВАЖНО</button>
+    <button class="sort-btn" id="btn-high" onclick="sort('high')">↑ ОЧЕНЬ<br>ВАЖНО</button>
+    <button class="sort-btn" onclick="sort('medium')">ВАЖНО →</button>
+  </div>
+</div>
+
+<!-- ── Round summary ───────────────────────────────────────── -->
+<div id="s-summary" class="screen">
+  <div class="s-title" id="sum-title">РАУНД ЗАВЕРШЁН</div>
+  <div class="pile-row"><span class="pile-name">ОЧЕНЬ ВАЖНО</span><span class="pile-n" id="cnt-h">0</span></div>
+  <div class="pile-row"><span class="pile-name">ВАЖНО</span><span class="pile-n" id="cnt-m">0</span></div>
+  <div class="pile-row"><span class="pile-name">НЕ ОЧЕНЬ ВАЖНО</span><span class="pile-n" id="cnt-l">0</span></div>
+  <div class="s-sub" id="sum-text" style="margin-top:24px; margin-bottom:24px;"></div>
+  <button class="s-btn" onclick="nextRound()">ПРОДОЛЖИТЬ →</button>
+</div>
+
+<!-- ── Results ─────────────────────────────────────────────── -->
+<div id="s-results" class="screen">
+  <div class="s-title">ВАШИ ЦЕННОСТИ</div>
+  <div class="s-sub" id="res-sub" style="margin-bottom:20px;"></div>
+  <div id="chips"></div>
+  <button class="s-btn" onclick="restart()">НАЧАТЬ ЗАНОВО</button>
+</div>
+
+<script>
+// ── Deck ───────────────────────────────────────────────────────
+const CARDS = [
+  { t:'Партнёрство',         d:'Быть надёжным и поддерживающим партнёром в близких отношениях' },
+  { t:'Терпение',             d:'Проявлять терпение к себе и другим в сложных ситуациях' },
+  { t:'Мастерство',           d:'Стремиться к совершенству в важных для меня делах и навыках' },
+  { t:'Упорство',             d:'Продолжать двигаться вперёд, несмотря на трудности и препятствия' },
+  { t:'Сексуальность',        d:'Исследовать и выражать свою сексуальность открыто и честно' },
+  { t:'Ответственность',      d:'Брать на себя ответственность за свои действия и их последствия' },
+  { t:'Благодарность',        d:'Замечать и ценить хорошее в своей жизни и в других людях' },
+  { t:'Искренность',          d:'Быть честным и открытым в выражении своих мыслей и чувств' },
+  { t:'Забота',               d:'Проявлять искреннюю заботу о благополучии близких' },
+  { t:'Гибкость',             d:'Адаптироваться к изменениям и быть открытым к новым подходам' },
+  { t:'Щедрость',             d:'Делиться своим временем, вниманием и ресурсами с другими' },
+  { t:'Поддержка',            d:'Оказывать помощь и поддержку тем, кто в этом нуждается' },
+  { t:'Прощение',             d:'Отпускать обиды и прощать себя и других за ошибки' },
+  { t:'Контакт',              d:'Поддерживать глубокий эмоциональный контакт с важными людьми' },
+  { t:'Воодушевление',        d:'Вдохновлять и воодушевлять других своим примером и словами' },
+  { t:'Аутентичность',        d:'Быть собой, жить в соответствии со своими истинными ценностями' },
+  { t:'Великодушие',          d:'Проявлять щедрость духа и доброту в отношениях с другими' },
+  { t:'Доверие',              d:'Строить и поддерживать доверительные отношения с другими' },
+  { t:'Принятие',             d:'Принимать себя, свои переживания и других людей без осуждения' },
+  { t:'Романтика',            d:'Привносить романтику, нежность и красоту в близкие отношения' },
+  { t:'Чувственность',        d:'Наслаждаться чувственными переживаниями и телесными удовольствиями' },
+  { t:'Любопытство',          d:'Исследовать мир с открытым умом и интересом к новому' },
+  { t:'Вклад',                d:'Вносить значимый вклад в жизнь других людей и общества' },
+  { t:'Забота о себе',        d:'Уделять внимание собственному физическому и эмоциональному здоровью' },
+  { t:'Юмор',                 d:'Сохранять лёгкость, игривость и способность смеяться над собой' },
+  { t:'Творчество',           d:'Создавать новое, выражать себя через творческую деятельность' },
+  { t:'Вдумчивость',          d:'Размышлять глубоко и осознанно перед принятием важных решений' },
+  { t:'Независимость',        d:'Делать самостоятельный выбор и жить согласно своим убеждениям' },
+  { t:'Откровенность',        d:'Открыто делиться своими мыслями, чувствами и переживаниями' },
+  { t:'Порядок',              d:'Поддерживать структуру и организованность в жизни' },
+  { t:'Справедливость',       d:'Быть справедливым и объективным по отношению к себе и другим' },
+  { t:'Сострадание',          d:'По-доброму обращаться с собой и другими в моменты боли' },
+  { t:'Веселье',              d:'Получать удовольствие, веселиться, создавать радостные занятия' },
+  { t:'Скромность',           d:'Быть смиренным, позволяя своим достижениям говорить за себя' },
+  { t:'Равенство',            d:'Обращаться с разными людьми и с собой на равных' },
+  { t:'Само-уважение',        d:'Относиться к себе с вниманием, достоинством и заботой' },
+  { t:'Настойчивость',        d:'Последовательно следовать своему пути, несмотря на трудности' },
+  { t:'Трудолюбие',           d:'Быть предприимчивым и трудолюбивым в своём деле' },
+  { t:'Физическая форма',     d:'Поддерживать и улучшать физическое и психологическое здоровье' },
+  { t:'Широта взглядов',      d:'Рассматривать разные точки зрения и честно оценивать факты' },
+  { t:'Свобода',              d:'Самостоятельно выбирать как жить и помогать другим делать то же' },
+  { t:'Честность',            d:'Быть правдивым и искренним с собой и с другими' },
+  { t:'Само-развитие',        d:'Расти, совершенствоваться и углублять свои знания и навыки' },
+  { t:'Духовность',           d:'Чувствовать связь с чем-то большим, чем мы сами' },
+  { t:'Дружелюбие',           d:'Быть открытым, приветливым и коммуникабельным' },
+  { t:'Красота',              d:'Ценить, создавать, сохранять и взращивать красоту' },
+  { t:'Доброта',              d:'Быть внимательным и заботливым по отношению к себе и другим' },
+  { t:'Уверенность',          d:'Отстаивать свои права и просить о том, что мне нужно' },
+  { t:'Мужество',             d:'Быть отважным и не отступать перед лицом страха и трудностей' },
+  { t:'Любовь',               d:'Относиться с любовью и теплом к себе и другим' },
+  { t:'Вызов',                d:'Постоянно бросать себе вызов, расти, учиться, совершенствоваться' },
+  { t:'Близость',             d:'Открываться и делиться собой эмоционально и физически в близких отношениях' },
+  { t:'Добросовестность',     d:'Быть беспристрастным и непредвзятым к себе и другим' },
+  { t:'Энергичность',         d:'Искать и создавать деятельность, которая вдохновляет и наполняет энергией' },
+  { t:'Приключения',          d:'Активно исследовать новые стимулирующие переживания и творить' },
+  { t:'Безопасность',         d:'Обеспечивать безопасность — собственную и окружающих' },
+];
+
+// ── State ──────────────────────────────────────────────────────
+let round = 1, deck = [], hi = [], mid = [], lo = [], idx = 0, busy = false;
+
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── Start ──────────────────────────────────────────────────────
+function begin() {
+  round = 1;
+  deck  = shuffle(CARDS);
+  showRoundIntro();
+}
+
+function showRoundIntro() {
+  const titles = ['', 'РАУНД 1 ИЗ 3', 'РАУНД 2 ИЗ 3', 'РАУНД 3 ИЗ 3'];
+  const texts  = [
+    '',
+    `Перед вами ${deck.length} карточек.\n\nРаспределите каждую в одну из стопок:\n«Очень важно», «Важно» или «Не очень важно».\n\nДоверяйтесь первому ощущению — не анализируйте.`,
+    `${deck.length} карточек, которые показались вам очень важными.\n\nПройдитесь по ним ещё раз — что действительно важно?\nЧто можно отпустить?`,
+    `Финальный круг. ${deck.length} карточек.\n\nВыберите то, что составляет самую суть.\nЭто и есть ваши ценности.`,
+  ];
+  document.getElementById('round-title').textContent = titles[round];
+  document.getElementById('round-text').textContent  = texts[round];
+  show('s-round');
+}
+
+function startSort() {
+  hi = []; mid = []; lo = []; idx = 0; busy = false;
+  document.getElementById('round-label').textContent = `РАУНД ${round} ИЗ 3`;
+  show('sort-screen');
+  loadCard();
+}
+
+// ── Card ───────────────────────────────────────────────────────
+function loadCard() {
+  const c = deck[idx];
+  document.getElementById('progress-fill').style.width = (idx / deck.length * 100) + '%';
+  document.getElementById('card-counter').textContent  = `${idx + 1} / ${deck.length}`;
+  document.getElementById('card-title').textContent      = c.t.toUpperCase();
+  document.getElementById('card-title-back').textContent = c.t.toUpperCase();
+  document.getElementById('card-desc').textContent       = c.d;
+
+  const wrap = document.getElementById('card-wrap');
+  wrap.classList.remove('flipped');
+
+  const area = document.getElementById('card-area');
+  area.className = 'entering';
+  void area.offsetWidth;
+  area.className = 'entering';
+}
+
+document.getElementById('card-wrap').addEventListener('click', () => {
+  if (!busy) document.getElementById('card-wrap').classList.toggle('flipped');
+});
+
+// ── Sort ───────────────────────────────────────────────────────
+function sort(pile) {
+  if (busy) return;
+  busy = true;
+
+  const card = deck[idx];
+  if (pile === 'high')   hi.push(card);
+  if (pile === 'medium') mid.push(card);
+  if (pile === 'low')    lo.push(card);
+
+  const area = document.getElementById('card-area');
+  area.className = pile === 'low' ? 'exit-l' : pile === 'medium' ? 'exit-r' : 'exit-u';
+
+  setTimeout(() => {
+    idx++;
+    busy = false;
+    if (idx >= deck.length) { showSummary(); return; }
+    loadCard();
+  }, 330);
+}
+
+// ── Keyboard ───────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('sort-screen').classList.contains('active')) return;
+  if (e.key === 'ArrowLeft'  || e.key === '1') sort('low');
+  if (e.key === 'ArrowUp'    || e.key === '2') sort('high');
+  if (e.key === 'ArrowRight' || e.key === '3') sort('medium');
+  if (e.key === ' ')   { e.preventDefault(); document.getElementById('card-wrap').classList.toggle('flipped'); }
+});
+
+// ── Swipe ──────────────────────────────────────────────────────
+let tx0 = 0, ty0 = 0;
+document.getElementById('card-area').addEventListener('touchstart', e => {
+  tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY;
+}, { passive: true });
+document.getElementById('card-area').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx0;
+  const dy = e.changedTouches[0].clientY - ty0;
+  const ax = Math.abs(dx), ay = Math.abs(dy);
+  if (ax < 12 && ay < 12) return; // tap handled by click
+  if (ay > ax && dy < -40)  sort('high');
+  else if (ax > 40 && dx < 0) sort('low');
+  else if (ax > 40 && dx > 0) sort('medium');
+}, { passive: true });
+
+// ── Summary ────────────────────────────────────────────────────
+function showSummary() {
+  // fallback: if no high cards, use medium
+  if (hi.length === 0) hi = [...mid];
+
+  document.getElementById('cnt-h').textContent = hi.length;
+  document.getElementById('cnt-m').textContent = mid.length;
+  document.getElementById('cnt-l').textContent = lo.length;
+  document.getElementById('sum-title').textContent = `РАУНД ${round} ЗАВЕРШЁН`;
+
+  let text = '';
+  if (round < 3) {
+    text = `В следующем раунде работаем с ${hi.length} карточками,\nкоторые вы отметили как «очень важные».`;
+  } else {
+    text = 'Все раунды пройдены.';
+  }
+  document.getElementById('sum-text').textContent = text;
+  show('s-summary');
+}
+
+function nextRound() {
+  if (round >= 3 || hi.length === 0) { showResults(); return; }
+  round++;
+  deck = shuffle(hi);
+  showRoundIntro();
+}
+
+// ── Results ────────────────────────────────────────────────────
+function showResults() {
+  const final = hi.length > 0 ? hi : mid;
+  document.getElementById('res-sub').textContent =
+    `${final.length} ценност${end(final.length)}, которые важнее всего`;
+
+  const box = document.getElementById('chips');
+  box.innerHTML = '';
+  final.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'chip';
+    el.textContent = c.t.toUpperCase();
+    el.style.animationDelay = (i * 0.05) + 's';
+    box.appendChild(el);
+  });
+  show('s-results');
+}
+
+function end(n) {
+  if (n === 1) return 'ь';
+  if (n >= 2 && n <= 4) return 'и';
+  return 'ей';
+}
+
+function restart() { show('s-welcome'); }
+</script>
+</body>
+</html>
