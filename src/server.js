@@ -9,6 +9,22 @@ const httpServer = http.createServer(app);
 const io = new Server(httpServer);
 const PORT = process.env.PORT || 3000;
 
+// Security headers required by Zoom App Marketplace
+app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://appssdk.zoom.us https://*.zoom.us; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' wss: ws: https:; " +
+    "font-src 'self' https:;"
+  );
+  next();
+});
+
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.json());
 
