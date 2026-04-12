@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ACT Tools</title>
+  <script src="https://appssdk.zoom.us/sdk.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body {
+      background: #06060a;
+      font-family: 'Courier New', monospace;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 18px 24px;
+    }
+
+    header { text-align: center; margin-bottom: 40px; }
+    .logo  { font-size: 11px; letter-spacing: 0.45em; color: rgba(255,255,255,0.22); }
+    #status-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      margin: 14px auto 0;
+      transition: background 0.6s;
+    }
+    #status-dot.live { background: rgba(80,220,120,0.65); }
+    #status-text { font-size: 8px; letter-spacing: 0.2em; color: rgba(255,255,255,0.14); margin-top: 7px; }
+
+    .tools { display: flex; flex-direction: column; gap: 10px; }
+
+    .tool-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 18px 16px;
+      cursor: pointer;
+      transition: all 0.18s;
+      display: flex; align-items: center; gap: 14px;
+      user-select: none;
+    }
+    .tool-card:hover  { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); }
+    .tool-card:active { background: rgba(255,255,255,0.1);  transform: scale(0.985); }
+    .tool-card.loading { opacity: 0.5; pointer-events: none; }
+
+    .tool-icon {
+      font-size: 18px; width: 42px; height: 42px;
+      background: rgba(255,255,255,0.05); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: rgba(255,255,255,0.7);
+    }
+    .tool-info { flex: 1; }
+    .tool-name { font-size: 13px; font-weight: 700; letter-spacing: 0.13em; color: rgba(255,255,255,0.85); margin-bottom: 4px; }
+    .tool-sub  { font-size: 9px;  letter-spacing: 0.06em; color: rgba(255,255,255,0.25); line-height: 1.5; }
+    .tool-arrow { font-size: 13px; color: rgba(255,255,255,0.18); flex-shrink: 0; }
+
+    #meeting-info { text-align: center; margin-top: 28px; font-size: 8px; letter-spacing: 0.2em; color: rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ACT TOOLS</div>
+  <div id="status-dot"></div>
+  <div id="status-text"></div>
+</header>
+
+<div class="tools">
+
+  <div class="tool-card" onclick="openBell()">
+    <div class="tool-icon">◎</div>
+    <div class="tool-info">
+      <div class="tool-name">КОЛОКОЛЬЧИК</div>
+      <div class="tool-sub">Осознанность · звуковой сигнал</div>
+    </div>
+    <div class="tool-arrow">→</div>
+  </div>
+
+  <div class="tool-card" id="card-rope" onclick="openRope()">
+    <div class="tool-icon">⊗</div>
+    <div class="tool-info">
+      <div class="tool-name">КАНАТ</div>
+      <div class="tool-sub">Принятие · перетягивание с монстром</div>
+    </div>
+    <div class="tool-arrow">→</div>
+  </div>
+
+  <div class="tool-card" onclick="openValues()">
+    <div class="tool-icon">◈</div>
+    <div class="tool-info">
+      <div class="tool-name">ЦЕННОСТИ</div>
+      <div class="tool-sub">Ценности · сортировка карточек</div>
+    </div>
+    <div class="tool-arrow">→</div>
+  </div>
+
+</div>
+
+<div id="meeting-info"></div>
+
+<script>
+let meetingID = null;
+let userRole  = null;   // 'host' | 'attendee'
+let inZoom    = false;
+
+async function initZoom() {
+  if (typeof zoomSdk === 'undefined') return;
+  try {
+    await zoomSdk.config({
+      capabilities: [
+        'shareApp',
+        'getMeetingContext',
+        'getUserContext',
+        'sendAppInvitation',
+      ],
+      popoutSize: { width: 480, height: 780 }
+    });
+
+    const [meetCtx, userCtx] = await Promise.all([
+      zoomSdk.getMeetingContext(),
+      zoomSdk.getUserContext(),
+    ]);
+
+    meetingID = meetCtx.meetingID;
+    userRole  = userCtx.role;   // 'host' or 'attendee'
+    inZoom    = true;
+
+    document.getElementById('status-dot').classList.add('live');
+    document.getElementById('status-text').textContent = 'ZOOM · ' + (userRole === 'host' ? 'ТЕРАПЕВТ' : 'КЛИЕНТ');
+    document.getElementById('meeting-info').textContent = 'ID: ' + meetingID;
+
+    // Клиент: проверяем, есть ли активный сеанс канатного упражнения
+    if (userRole !== 'host') autoJoinIfActive();
+
+  } catch(e) {
+    // Вне Zoom — браузерный режим, меню работает в обычном режиме
+    document.getElementById('status-text').textContent = 'БРАУЗЕР · ВНЕ ZOOM';
+  }
+}
+
+async function autoJoinIfActive() {
+  if (!meetingID) return;
+  try {
+    const res  = await fetch('/api/session/' + meetingID);
+    const data = await res.json();
+    if (data.active) window.location = '/app/rope?room=' + meetingID;
+  } catch(e) {}
+}
+
+initZoom();
+
+// ── Навигация ────────────────────────────────────────────────
+function openBell() { window.location = '/app/bell'; }
+function openValues(){ window.location = '/app/values'; }
+
+async function openRope() {
+  const room   = meetingID || Math.floor(1000 + Math.random() * 9000).toString();
+  const isHost = !inZoom || userRole === 'host';
+
+  document.getElementById('card-rope').classList.add('loading');
+
+  if (inZoom && isHost) {
+    try { await zoomSdk.sendAppInvitation({ participants: [] }); } catch(e) {}
+  }
+
+  window.location = isHost
+    ? '/app/rope-therapist?room=' + room
+    : '/app/rope?room=' + room;
+}
+</script>
+</body>
+</html>

@@ -14,10 +14,17 @@ app.use(express.json());
 
 // Routes
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
+app.get('/app', (req, res) => res.sendFile(path.join(__dirname, '../public/app/index.html')));
 app.get('/app/bell', (req, res) => res.sendFile(path.join(__dirname, '../public/app/bell.html')));
 app.get('/app/rope', (req, res) => res.sendFile(path.join(__dirname, '../public/app/rope-client.html')));
 app.get('/app/rope-therapist', (req, res) => res.sendFile(path.join(__dirname, '../public/app/rope-therapist.html')));
 app.get('/app/values', (req, res) => res.sendFile(path.join(__dirname, '../public/app/values.html')));
+
+// API: проверить есть ли активный сеанс канатного упражнения (для Zoom auto-routing)
+app.get('/api/session/:roomCode', (req, res) => {
+  const session = sessions.get(req.params.roomCode);
+  res.json({ active: !!(session && session.therapistId) });
+});
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 app.get('/auth', (req, res) => {

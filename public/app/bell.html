@@ -4,9 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ACT Bell — Zoom App</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    #back-btn { position: fixed; top: 14px; left: 14px; z-index: 100; font-family: 'Courier New', monospace; font-size: 9px; letter-spacing: 0.2em; color: rgba(255,255,255,0.25); cursor: pointer; background: none; border: none; transition: color .15s; }
+    #back-btn:hover { color: rgba(255,255,255,0.6); }
+  </style>
 </head>
 <body>
+  <button id="back-btn" onclick="window.location='/app'">← ACT TOOLS</button>
   <div class="app">
     <header class="app-header">
       <h1>ACT Bell</h1>
@@ -104,7 +109,7 @@
   </div>
 
   <script src="https://appssdk.zoom.us/sdk.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/app.js"></script>
+  <script src="/js/audio.js"></script>
+  <script src="/js/app.js"></script>
 </body>
 </html>

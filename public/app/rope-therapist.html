@@ -12,10 +12,13 @@
     #code-value { font-size: 30px; font-weight: bold; letter-spacing: 0.25em; color: rgba(255,255,255,0.5); display: block; margin-top: 4px; }
     #dot { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.12); transition: background 0.5s; z-index: 10; }
     #dot.connected { background: rgba(80,220,120,0.55); }
+    #back-btn { position: fixed; top: 16px; left: 16px; z-index: 20; font-family: 'Courier New', monospace; font-size: 9px; letter-spacing: 0.2em; color: rgba(255,255,255,0.18); cursor: pointer; background: none; border: none; transition: color 0.15s; }
+    #back-btn:hover { color: rgba(255,255,255,0.5); }
   </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<button id="back-btn" onclick="window.location='/app'">← ACT TOOLS</button>
 <div id="code-wrap">
   <div id="code-label">КОД СЕССИИ</div>
   <span id="code-value">----</span>
@@ -36,9 +39,14 @@ const R = 55;
 // Mirror same layout as client
 const target = { x: W/2, y: 130, r: R }; // red zone — TOP (same as client)
 
-// Room
-const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
-document.getElementById('code-value').textContent = roomCode;
+// Room — принимаем meeting ID из Zoom или генерируем 4-значный код
+const urlRoom  = new URLSearchParams(location.search).get('room');
+const roomCode = urlRoom || Math.floor(1000 + Math.random() * 9000).toString();
+if (urlRoom) {
+  document.getElementById('code-wrap').style.display = 'none'; // в Zoom код не нужен
+} else {
+  document.getElementById('code-value').textContent = roomCode;
+}
 
 const socket = io();
 socket.emit('therapist-create', roomCode);
