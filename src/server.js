@@ -52,12 +52,12 @@ io.on('connection', (socket) => {
     socket.to(roomCode).emit('exercise-stop');
   });
 
-  socket.on('therapist-velocity', ({ roomCode, vx, vy }) => {
-    socket.to(roomCode).emit('therapist-velocity', { vx, vy });
+  socket.on('therapist-force', ({ roomCode, fx, fy }) => {
+    socket.to(roomCode).emit('therapist-force', { fx, fy });
   });
 
-  socket.on('therapist-pull', ({ roomCode, dx, dy }) => {
-    socket.to(roomCode).emit('monster-pull', { dx, dy });
+  socket.on('monster-release', (roomCode) => {
+    socket.to(roomCode).emit('monster-release');
   });
 
   socket.on('therapist-release', (roomCode) => {

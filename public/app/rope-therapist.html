@@ -46,6 +46,7 @@ socket.emit('therapist-create', roomCode);
 let clientConnected = false;
 let clientHolding   = false;
 let pulling         = false;
+let exerciseStarted = false;
 let mouseX = W/2, mouseY = H/2;
 
 // Ghost ball (client's position, normalised)
@@ -56,41 +57,44 @@ socket.on('client-holding-update', (h)      => { clientHolding = h; });
 socket.on('ball-position-update',  ({ nx, ny }) => { ghostNX = nx; ghostNY = ny; });
 socket.on('peer-disconnected',     ()       => { clientConnected = false; document.getElementById('dot').classList.remove('connected'); });
 
-// Track mouse delta and send as velocity to client
-const THERAPIST_SCALE = 0.07; // how much drag speed becomes force
-let lastSentX = mouseX, lastSentY = mouseY;
+// Send force continuously while pulling:
+// direction = from ghost ball toward click point
+// strength  = distance / screen diagonal (further = stronger)
+const MAX_FORCE   = 1.0;
+const SCREEN_DIAG = Math.hypot(W, H);
 
 setInterval(() => {
   if (!pulling || !clientConnected) return;
-  const dx = mouseX - lastSentX;
-  const dy = mouseY - lastSentY;
-  lastSentX = mouseX; lastSentY = mouseY;
-  // Only send if there's actual movement
-  if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
-    socket.emit('therapist-velocity', { roomCode, vx: dx * THERAPIST_SCALE, vy: dy * THERAPIST_SCALE });
-  }
+
+  const ghostX = ghostNX * W;
+  const ghostY = ghostNY * H;
+  const dx     = mouseX - ghostX;
+  const dy     = mouseY - ghostY;
+  const dist   = Math.max(Math.hypot(dx, dy), 1);
+  const strength = Math.min(dist / (SCREEN_DIAG * 0.5), 1) * MAX_FORCE;
+  socket.emit('therapist-force', { roomCode, fx: (dx/dist)*strength, fy: (dy/dist)*strength });
 }, 50);
 
 // Mouse
 canvas.addEventListener('mousedown', e => {
   mouseX = e.clientX; mouseY = e.clientY;
-  // First press: snap ball to home + start exercise
-  socket.emit('exercise-start', roomCode);
+  if (!exerciseStarted) { socket.emit('exercise-start', roomCode); exerciseStarted = true; }
   pulling = true;
-  socket.emit('therapist-pull', { roomCode, dx: 0, dy: 0 });
 });
-canvas.addEventListener('mousemove',  e => { mouseX = e.clientX; mouseY = e.clientY; });
-canvas.addEventListener('mouseup',    () => { pulling = false; socket.emit('therapist-release', roomCode); });
-canvas.addEventListener('mouseleave', () => { if (pulling) { pulling = false; socket.emit('therapist-release', roomCode); } });
+canvas.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+canvas.addEventListener('mouseup',   () => { pulling = false; socket.emit('monster-release', roomCode); });
+canvas.addEventListener('mouseleave',() => { if (pulling) { pulling = false; socket.emit('monster-release', roomCode); } });
 
 // Touch
 canvas.addEventListener('touchstart', e => {
   const t = e.touches[0]; mouseX = t.clientX; mouseY = t.clientY;
-  socket.emit('exercise-start', roomCode);
+  if (!exerciseStarted) { socket.emit('exercise-start', roomCode); exerciseStarted = true; }
   pulling = true;
 }, { passive: true });
-canvas.addEventListener('touchmove',  e => { e.preventDefault(); const t = e.touches[0]; mouseX = t.clientX; mouseY = t.clientY; }, { passive: false });
-canvas.addEventListener('touchend',   () => { pulling = false; socket.emit('therapist-release', roomCode); });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault(); const t = e.touches[0]; mouseX = t.clientX; mouseY = t.clientY;
+}, { passive: false });
+canvas.addEventListener('touchend', () => { pulling = false; socket.emit('monster-release', roomCode); });
 
 function lerp(a, b, t) { return a + (b - a) * t; }
 
