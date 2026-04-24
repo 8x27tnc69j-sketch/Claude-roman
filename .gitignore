@@ -2,3 +2,9 @@ node_modules/
 .env
 *.log
 C:\\Users\\*
+
+# metal-shelving project
+metal-shelving/venv/
+metal-shelving/output/
+__pycache__/
+*.pyc
