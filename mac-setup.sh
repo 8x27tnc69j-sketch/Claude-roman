@@ -32,10 +32,18 @@ say "Шаг 1 — Homebrew"
 if command -v brew >/dev/null 2>&1; then
   ok "уже установлен"
 else
-  warn "ставлю Homebrew. Может спросить ПАРОЛЬ от Мака (вводи вслепую, Enter)"
-  warn "и/или предложить установить Command Line Tools — соглашайся (окошко Install)"
-  NONINTERACTIVE=1 /bin/bash -c \
-    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+  # Проверим права администратора — без них Homebrew не встанет
+  if ! groups 2>/dev/null | grep -qw admin; then
+    die "Твоя учётка НЕ администратор — Homebrew без этого не поставить.
+     Заведи/включи админ-права: Системные настройки → Пользователи и группы,
+     либо войди под админ-учёткой, потом запусти скрипт снова."
+  fi
+  warn "ставлю Homebrew (интерактивно)."
+  warn "1) появится «Press RETURN/ENTER to continue» — нажми Enter"
+  warn "2) спросит ПАРОЛЬ от Мака — печатай вслепую (буквы не видно), Enter"
+  warn "3) может предложить Command Line Tools — соглашайся (окошко Install)"
+  /bin/bash -c \
+    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/tty \
     || die "Homebrew не установился. Скинь мне последние строки ошибки."
 fi
 # Подключаем brew к текущей сессии и к будущим (Apple Silicon vs Intel)
